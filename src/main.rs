@@ -193,13 +193,25 @@ fn main() {
     let key = "qortmddkqortmdck";
 
     let args = env::args().collect::<Vec<String>>();
-    if args.len() < 2 {
-        println!("Usage: ./df-password password");
-        return;
+    if args.len() < 3 {
+        println!("Usage: ./df-password [dec|enc] <password>");
+        std::process::exit(1);
+    }
+
+    // check args
+    if args[1] != "dec" && args[1] != "enc" {
+        println!("Usage: ./df-password [dec|enc] <password>");
+        std::process::exit(1);
+    }
+
+    // check password length
+    if args[1] == "enc" && args[2].len() > 20 {
+        println!("Password too long");
+        std::process::exit(1);
     }
     
-    if args.len() == 2 {
-        let password = args[1].as_bytes();
+    if args[1] == "enc" {
+        let password = args[2].as_bytes();
         let password = &password[0..20.min(password.len())];
 
         let mut data = [0u8; 24];
@@ -210,14 +222,14 @@ fn main() {
         let tea = Tea::new(key.as_bytes(), [1; 8], TeaMode::ECB, false).unwrap();
 
         let encrypted = tea.encrypt(&data).unwrap();
-        println!("Encrypted: {}", hex::encode(encrypted));
-    } else {
+        println!("{}", hex::encode(encrypted));
+    } else if args[1] == "dec" {
         let data = hex::decode(&args[2]).unwrap();
         let data = &data[0..24.min(data.len())];
 
         let tea = Tea::new(key.as_bytes(), [1; 8], TeaMode::ECB, false).unwrap();
         let decrypted = tea.decrypt(&data).unwrap();
-        println!("Decrypted: {}", String::from_utf8(decrypted).unwrap());
+        println!("{}", String::from_utf8(decrypted).unwrap());
     }
 }
 
